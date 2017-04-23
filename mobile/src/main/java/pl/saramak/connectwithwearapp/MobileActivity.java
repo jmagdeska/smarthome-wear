@@ -1,5 +1,7 @@
 package pl.saramak.connectwithwearapp;
 
+import android.content.Intent;
+import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -18,7 +20,9 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, MessageApi.MessageListener {
+import java.util.List;
+
+public class MobileActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, MessageApi.MessageListener {
 
 
     private static final String START_ACTIVITY = "/start_activity";
@@ -47,7 +51,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
         initGoogleApiClient();
-
     }
 
     private void sendMessage(final String path, final String message) {
@@ -76,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         @Override
                         public void onResult(@NonNull MessageApi.SendMessageResult sendMessageResult) {
                             if (sendMessageResult.getStatus().isSuccess()){
+                                inputText.getText().clear();
                                 showToastMT(message);
                             }
                         }

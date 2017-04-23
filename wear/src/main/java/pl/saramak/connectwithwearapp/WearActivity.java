@@ -1,6 +1,9 @@
 package pl.saramak.connectwithwearapp;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.BoxInsetLayout;
@@ -20,6 +23,7 @@ import com.google.android.gms.wearable.Wearable;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class WearActivity extends WearableActivity implements MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
@@ -36,6 +40,7 @@ public class WearActivity extends WearableActivity implements MessageApi.Message
     private Button mClockView;
     private Button mClock2View;
     private GoogleApiClient mApiClient;
+    private EditText input_text;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +52,7 @@ public class WearActivity extends WearableActivity implements MessageApi.Message
         mTextView = (TextView) findViewById(R.id.text);
         mClockView = (Button) findViewById(R.id.clock);
         mClock2View = (Button) findViewById(R.id.clock2);
+        input_text = (EditText) findViewById(R.id.input_text);
         mClockView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
