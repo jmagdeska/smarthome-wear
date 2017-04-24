@@ -28,6 +28,7 @@ public class MobileActivity extends AppCompatActivity implements GoogleApiClient
     private static final String START_ACTIVITY = "/start_activity";
     private static final String WEAR_MESSAGE_PATH = "/message";
     private static final String PHONE_MESSAGE_PATH = "/pmessage";
+    private static final String PATH_ACTION = "/action";
     private GoogleApiClient mApiClient;
     private Button sendButton;
     private String textToSend = "";
