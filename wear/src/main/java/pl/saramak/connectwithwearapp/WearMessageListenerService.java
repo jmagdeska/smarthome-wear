@@ -13,7 +13,7 @@ public class WearMessageListenerService extends WearableListenerService {
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         if( messageEvent.getPath().equalsIgnoreCase(PATH_ACTION) ) {
-            Intent intent = new Intent( this, WearActivity.class );
+            Intent intent = new Intent( this, WearMeasure.class );
             intent.addFlags( Intent.FLAG_ACTIVITY_NEW_TASK );
             startActivity( intent );
         } else {

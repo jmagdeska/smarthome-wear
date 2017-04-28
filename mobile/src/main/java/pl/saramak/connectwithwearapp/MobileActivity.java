@@ -20,6 +20,7 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.IOException;
 import java.util.List;
 
 public class MobileActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, MessageApi.MessageListener {
@@ -52,6 +53,14 @@ public class MobileActivity extends AppCompatActivity implements GoogleApiClient
             }
         });
         initGoogleApiClient();
+
+        DBHelper dbHelper = new DBHelper(this);
+        try {
+            dbHelper.createDataBase();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void sendMessage(final String path, final String message) {

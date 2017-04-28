@@ -1,119 +1,114 @@
 package pl.saramak.connectwithwearapp;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
 import android.support.wearable.activity.WearableActivity;
-import android.support.wearable.view.WatchViewStub;
+import android.support.wearable.view.BoxInsetLayout;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
-import java.nio.charset.Charset;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
-/**
- * Created by Jana on 4/23/2017.
- */
+public class WearMeasure extends WearableActivity implements MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
 
-public class WearMeasure extends WearableActivity implements GoogleApiClient.ConnectionCallbacks,  MessageApi.MessageListener {
+    private static final SimpleDateFormat AMBIENT_DATE_FORMAT =
+            new SimpleDateFormat("HH:mm", Locale.US);
 
-    private Button btn_measure;
+    private static final String WEAR_MESSAGE_PATH = "/message";
+    private static final String PHONE_MESSAGE_PATH = "/pmessage";
+    private static final String START_PHONE_ACTIVITY = "/start_phone_activity";
+
+    private BoxInsetLayout mContainerView;
+    private TextView mTextView;
     private GoogleApiClient mApiClient;
-    private static final int SPEECH_REQUEST_CODE = 0;
-    private static final String PATH_ACTION = "/action";
+    private EditText input_text;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.wear_activity_measurements);
+        setContentView(R.layout.wear_activity_measure);
 
-        WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
-        stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
-            @Override
-            public void onLayoutInflated(WatchViewStub stub) {
-//                btn_measure = (Button) findViewById(R.id.measureBtn);
-//                btn_measure.setOnClickListener(new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View view) {
-//                        initGoogleApiClient();
-//                    }
-//                });
-            }
-        });
+//        mContainerView = (BoxInsetLayout) findViewById(R.id.container);
+//        mTextView = (TextView) findViewById(R.id.text);
+//        input_text = (EditText) findViewById(R.id.input_text);
 
+        initGoogleApiClient();
     }
 
     private void initGoogleApiClient() {
         mApiClient = new GoogleApiClient.Builder( this )
                 .addApi( Wearable.API )
-                .addConnectionCallbacks(this)
+                .addConnectionCallbacks( this )
                 .build();
 
         if( mApiClient != null && !( mApiClient.isConnected() || mApiClient.isConnecting() ) )
             mApiClient.connect();
     }
 
-    // Create an intent that can start the Speech Recognizer activity
-    private void displaySpeechRecognizer() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-// Start the activity, the intent will be populated with the speech text
-        startActivityForResult(intent, SPEECH_REQUEST_CODE);
+    private void sendMessage(final String path, final String message) {
+        new Thread( new Runnable() {
+            @Override
+            public void run() {
+                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+                for(Node node : nodes.getNodes()) {
+                    MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
+                            mApiClient, node.getId(), path, message.getBytes() ).await();
+                }
+
+                runOnUiThread( new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "m to phone: " + message, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).start();
     }
 
-    // This callback is invoked when the Speech Recognizer returns.
-// This is where you process the intent and extract the speech text from the intent.
     @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-                                    Intent data) {
-        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK) {
-            List<String> results = data.getStringArrayListExtra(
-                    RecognizerIntent.EXTRA_RESULTS);
-            String spokenText = results.get(0);
-            final byte[] voiceNoteBytes =
-                    spokenText.getBytes(Charset.forName("utf-8"));
-            // Get a list of all of the devices that you're
-            // connected to. Usually this will just be your
-            // phone. Any other devices will ignore your message.
-            Wearable.NodeApi.getConnectedNodes(mApiClient)
-                    .setResultCallback(
-                            new ResultCallback<NodeApi.GetConnectedNodesResult>() {
-                                @Override
-                                public void onResult(
-                                        NodeApi.GetConnectedNodesResult nodes)
-                                {
-                                    for (Node node : nodes.getNodes()) {
-
-                                        // Send the phone a message requesting that
-                                        // it add the task to the database
-                                        Wearable.MessageApi.sendMessage(
-                                                mApiClient,
-                                                node.getId(),
-                                                PATH_ACTION,
-                                                voiceNoteBytes
-                                        );
-                                    }
-                                    finish();
-                                }
-                            }
-                    );
-            System.out.println("Tekst: " + spokenText);
-        }
-        super.onActivityResult(requestCode, resultCode, data);
+    protected void onResume() {
+        super.onResume();
+        if( mApiClient != null && !( mApiClient.isConnected() || mApiClient.isConnecting() ) )
+            mApiClient.connect();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if ( mApiClient != null ) {
+            Wearable.MessageApi.removeListener( mApiClient, this );
+            if ( mApiClient.isConnected() ) {
+                mApiClient.disconnect();
+            }
+        }
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if( mApiClient != null )
+            mApiClient.unregisterConnectionCallbacks( this );
+        super.onDestroy();
+    }
+    private static final String START_ACTIVITY = "/start_activity";
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        displaySpeechRecognizer();
+        sendMessage(START_PHONE_ACTIVITY, "");
+        Wearable.MessageApi.addListener( mApiClient, this );
     }
 
     @Override
@@ -126,8 +121,8 @@ public class WearMeasure extends WearableActivity implements GoogleApiClient.Con
         runOnUiThread( new Runnable() {
             @Override
             public void run() {
-                if( messageEvent.getPath().equalsIgnoreCase(PATH_ACTION) ) {
-                    System.out.println("Poraka od mob");
+                if( messageEvent.getPath().equalsIgnoreCase( WEAR_MESSAGE_PATH ) ) {
+                    mTextView.setText("Received text: " + new String(messageEvent.getData()));
                 }
             }
         });

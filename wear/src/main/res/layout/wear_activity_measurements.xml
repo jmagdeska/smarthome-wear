@@ -6,5 +6,5 @@
     android:layout_height="match_parent"
     app:rectLayout="@layout/rect_activity_measurements"
     app:roundLayout="@layout/round_activity_measurements"
-    tools:context=".WearMeasure"
+    tools:context=".WearMain"
     tools:deviceIds="wear"/>
